@@ -1,17 +1,18 @@
 # ⚽ Wawa Foot Coach
 
-Coach guidé pour mes 2 séances de foot par semaine (attaquant / milieu) :
-- **Séance A (mercredi)** : vitesse, sprints répétés (RSA), renfo force, Nordic
-- **Séance B (samedi)** : échelle, changements de direction, finition, Copenhagen, mollets/tibial
-- Progression sur 8 semaines, check douleur tibia (périostite) avant chaque séance
-- Bips 3-2-1, voix en français, écran qui reste allumé
+Coach guidé pour mes 2 séances de foot par semaine (attaquant / milieu), **50 min maximum** chacune :
+- **Séance A** : échauffement, sauts, accélérations, sprints répétés, renfo force (fente bulgare, tractions, Nordic, mollets)
+- **Séance B** : échelle, 4 parcours techniques avec schémas (slalom, contrôle orienté, échelle + frappe, parcours de l'attaquant), circuit prévention (Copenhagen, tibial, mollets, gainage)
+- Pour chaque séance : matériel à prendre, mise en place sur le terrain, check tibia (périostite)
+- Chaque exercice expliqué (comment faire, à savoir, erreurs), chrono pour chaque série et chaque récup, bips + voix
+- 2 tests simples (navettes 15 m, tractions max) en semaines 1 et 8
 - Séances, tests et historique **sauvegardés sur le serveur** (`data/data.json`)
 
 ## Structure
 
 ```
 foot-coach/
-├── src/             # l'appli React (App.jsx = écrans, sync.js = sauvegarde)
+├── src/             # App.jsx = écrans · program.js = séances et exercices · diagrams.js = schémas · sync.js = sauvegarde
 ├── server/server.js # petit serveur Node : sert l'appli + /api/data
 ├── public/          # icônes + manifest (installation sur l'iPhone)
 ├── Dockerfile
