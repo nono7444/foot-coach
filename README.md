@@ -19,6 +19,18 @@ foot-coach/
 └── update.sh        # mise à jour en une commande sur le serveur
 ```
 
+## 📱 Appli iPhone (FlareStore)
+
+L'appli native est dans `mobile/` (Expo / React Native, comme Lumio).
+À chaque push sur `main` qui touche `mobile/`, GitHub Actions compile l'IPA et publie une Release avec la source FlareStore.
+
+**Installer sur l'iPhone** : FlareStore → Sources → **+** → colle
+`https://github.com/nono7444/foot-coach/releases/latest/download/altstore.json`
+puis installe **Foot Coach**. Les mises à jour arrivent toutes seules dans FlareStore.
+
+Les séances et exercices sont dans `mobile/src/program.js` (partagé avec la version web).
+La sauvegarde serveur est optionnelle : onglet **Guide → Sauvegarde sur ton serveur**.
+
 ---
 
 ## 1. Première installation sur le serveur

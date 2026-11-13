@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Foot Coach",
+    "slug": "foot-coach",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b0c0e",
+    "ios": {
+      "bundleIdentifier": "lol.wawanono.footcoach",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "lol.wawanono.footcoach"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0b0c0e",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ]
+    ]
+  }
+}

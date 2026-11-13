@@ -3,3 +3,9 @@ dist
 data
 .env
 .DS_Store
+
+mobile/node_modules
+mobile/ios
+mobile/android
+mobile/.expo
+mobile/dist

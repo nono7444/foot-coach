@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { loadLocal, saveLocal, pullServer, pushServer, setPin } from "./sync.js";
-import { WEEK_LABEL, isTestWeek, params, MATERIEL, MISE_EN_PLACE, buildSession, sessionMinutes, stepSeconds, blocksOf, departures } from "./program.js";
-import { DIAGRAMS } from "./diagrams.js";
+import { WEEK_LABEL, isTestWeek, params, MATERIEL, MISE_EN_PLACE, buildSession, sessionMinutes, stepSeconds, blocksOf, departures } from "../mobile/src/program.js";
+import { DIAGRAMS } from "../mobile/src/diagrams.js";
 
 /* ============ audio / voix / écran allumé ============ */
 const audio = {

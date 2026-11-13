@@ -1,0 +1,121 @@
+name: Build Foot Coach iPhone (FlareStore)
+
+# Compile l'appli iPhone à chaque push sur main qui touche l'appli, ou à la main (onglet Actions → Run workflow).
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Vérifie que le code JavaScript compile
+        run: npx expo export --platform ios --output-dir /tmp/export
+
+  ios:
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Numéro de version (1.0.<n° de build>) pour les mises à jour FlareStore
+        run: |
+          node -e "const f='app.json';const a=require('./'+f);a.expo.version='1.0.${{ github.run_number }}';a.expo.ios.buildNumber='${{ github.run_number }}';require('fs').writeFileSync(f,JSON.stringify(a,null,2))"
+          grep -n '"version"\|buildNumber' app.json
+      - name: Génère le projet iOS
+        run: npx expo prebuild --platform ios --no-install --clean
+      - name: Installe les pods
+        working-directory: mobile/ios
+        run: pod install
+      - name: Compile l'app (non signée)
+        run: |
+          WS=$(ls -d ios/*.xcworkspace | head -1)
+          PROJ=$(basename "$WS" .xcworkspace)
+          echo "PROJ=$PROJ" >> "$GITHUB_ENV"
+          xcodebuild \
+            -workspace "$WS" \
+            -scheme "$PROJ" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            > xcodebuild.log 2>&1 || {
+              grep -E "error:|\*\* BUILD FAILED" xcodebuild.log | sort -u | head -30 | while IFS= read -r l; do echo "::error::$l"; done
+              tail -n 80 xcodebuild.log
+              exit 1
+            }
+          tail -n 20 xcodebuild.log
+          test -f "build/Build/Products/Release-iphoneos/$PROJ.app/Info.plist"
+      - name: Emballe l'IPA (FlareStore la signe à l'installation)
+        run: |
+          mkdir Payload
+          cp -R "build/Build/Products/Release-iphoneos/$PROJ.app" Payload/
+          zip -qry foot-coach-unsigned.ipa Payload
+          size=$(stat -f %z foot-coach-unsigned.ipa)
+          echo "IPA : $size octets"
+          if [ "$size" -lt 3000000 ]; then echo "::error::IPA anormalement petite ($size octets)"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: mobile/foot-coach-unsigned.ipa
+
+  release:
+    needs: ios
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios
+          path: mobile
+      - name: Source FlareStore (altstore.json)
+        env:
+          RELEASE_NOTES: ${{ github.event.head_commit.message }}
+        run: node scripts/make-source.mjs "1.0.${{ github.run_number }}" "ios-${{ github.run_number }}" foot-coach-unsigned.ipa
+      - name: Texte de la Release
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          {
+            echo "## Foot Coach 1.0.${{ github.run_number }}"
+            echo
+            printf '%s\n' "$COMMIT_MSG" | grep -viE '^(Co-Authored-By|Claude-Session)' | sed '/^$/d' | head -10
+            echo
+            echo "---"
+            echo "iPhone : ajoute la source dans FlareStore → https://github.com/${{ github.repository }}/releases/latest/download/altstore.json"
+          } > body.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-${{ github.run_number }}
+          name: Foot Coach 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body_path: mobile/body.md
+          files: |
+            mobile/foot-coach-unsigned.ipa
+            mobile/altstore.json
