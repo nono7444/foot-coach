@@ -5,9 +5,9 @@ import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-cont
 import { C, S } from "./theme";
 import { initSound, sound } from "./sound";
 import { loadLocal, saveLocal, loadServer, saveServer, pullServer, pushServer } from "./storage";
-import { Home, Overview, Runner, Finish, Tests, History, Guide } from "./screens";
+import { Home, SessionSheet, BlockRunner, Finish, Records, History, Guide } from "./screens";
 
-const EMPTY = { week: 1, history: [], tests: {}, voice: true, updatedAt: 0 };
+const EMPTY = { week: 1, history: [], records: {}, voice: true, updatedAt: 0 };
 
 function Main() {
   const insets = useSafeAreaInsets();
@@ -57,22 +57,38 @@ function Main() {
   useEffect(() => { scrollTop(); }, [tab, flow && flow.stage]);
 
   const lastPain = (data.history || []).slice(-1)[0]?.pain || 0;
-  const saveTestTimes = (times) => {
-    const key = dataRef.current.week === 8 ? "s8" : "s1";
-    const d = dataRef.current; const t = d.tests || {};
-    setData({ ...d, tests: { ...t, [key]: { ...(t[key] || {}), nav: times } } });
+
+  const saveSession = (entry, rec) => {
+    const d = dataRef.current;
+    const records = { ...(d.records || {}) };
+    Object.entries(rec || {}).forEach(([k, v]) => {
+      const n = Number(v);
+      if (n > 0 && (!records[k] || n > records[k].v)) records[k] = { v: n, d: entry.date };
+    });
+    setData({ ...d, history: [...(d.history || []), entry], records });
+    setFlow(null); setTab("home");
   };
 
   let screen;
-  if (flow?.stage === "overview") screen = <Overview session={flow.session} week={data.week} onBack={() => setFlow(null)} onGo={(adapted, pain) => setFlow({ ...flow, stage: "run", adapted: adapted || lastPain > 3, pain })} />;
-  else if (flow?.stage === "run") screen = <Runner session={flow.session} week={data.week} adapted={flow.adapted} scrollTop={scrollTop} onTestTimes={saveTestTimes} onExit={() => setFlow(null)} onFinish={(m) => setFlow({ ...flow, stage: "done", minutes: m })} />;
-  else if (flow?.stage === "done") screen = <Finish session={flow.session} week={data.week} minutes={flow.minutes} adapted={flow.adapted} painBefore={flow.pain} onSave={(e) => { const d = dataRef.current; setData({ ...d, history: [...(d.history || []), e] }); setFlow(null); setTab("home"); }} />;
-  else if (tab === "tests") screen = <Tests data={data} setData={setData} />;
+  if (flow?.stage === "sheet") screen = (
+    <SessionSheet id={flow.id} week={data.week} lastPain={lastPain} doneBlocks={flow.doneBlocks}
+      setDoneBlocks={(db) => setFlow({ ...flow, doneBlocks: db })}
+      onBack={() => setFlow(null)}
+      onRunBlock={(block, j) => setFlow({ ...flow, stage: "block", block, j })}
+      onFinish={(adapted) => setFlow({ ...flow, stage: "done", adapted })} />
+  );
+  else if (flow?.stage === "block") screen = (
+    <BlockRunner block={flow.block}
+      onBack={() => setFlow({ ...flow, stage: "sheet" })}
+      onDone={() => setFlow({ ...flow, stage: "sheet", doneBlocks: { ...flow.doneBlocks, [flow.j]: true } })} />
+  );
+  else if (flow?.stage === "done") screen = <Finish id={flow.id} week={data.week} adapted={flow.adapted} records={data.records || {}} onSave={saveSession} />;
+  else if (tab === "rec") screen = <Records data={data} setData={setData} />;
   else if (tab === "hist") screen = <History data={data} />;
   else if (tab === "guide") screen = <Guide server={server} setServer={setServer} syncText={syncText} onSyncNow={syncNow} />;
-  else screen = <Home data={data} setData={setData} onPick={(s) => setFlow({ stage: "overview", session: s })} />;
+  else screen = <Home data={data} setData={setData} onPick={(id) => setFlow({ stage: "sheet", id, doneBlocks: {} })} />;
 
-  const tabs = [["home", "⚽", "Séances"], ["tests", "⏱", "Tests"], ["hist", "📈", "Historique"], ["guide", "📖", "Guide"]];
+  const tabs = [["home", "⚽", "Séances"], ["rec", "🏆", "Records"], ["hist", "📈", "Historique"], ["guide", "📖", "Guide"]];
   return (
     <View style={S.screen}>
       <StatusBar style="light" />

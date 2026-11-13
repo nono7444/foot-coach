@@ -3,106 +3,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput } from "react-native";
 import { C, S } from "./theme";
 import { beep, say } from "./sound";
-import { Btn, Card, Countdown, Elapsed, fmt, useNow } from "./ui";
-import { departures } from "./program";
+import { Btn, Card, Countdown, Elapsed, fmt } from "./ui";
 
 function StartBtn({ title = "▶ Démarrer", onPress }) {
   return <Btn big title={title} onPress={onPress} style={{ marginTop: 12 }} />;
-}
-
-/* ---------- Minuteur simple (échauffement, parcours) ---------- */
-export function TimerStep({ step, onDone }) {
-  const [go, setGo] = useState(false);
-  if (!go) return <StartBtn title={"▶ Démarrer · " + fmt(step.dur)} onPress={() => { setGo(true); say(step.title); }} />;
-  return <Countdown seconds={step.dur} label={step.block} onEnd={() => { say("Terminé"); setTimeout(onDone, 700); }} />;
-}
-
-/* ---------- Départs à intervalles (sprints, navettes) ---------- */
-export function IntervalStep({ step, onDone, onTestTimes }) {
-  const phases = useMemo(() => {
-    const ph = [{ kind: "prep", dur: 10 }];
-    for (let s = 1; s <= step.series; s++) {
-      for (let r = 1; r <= step.reps; r++) ph.push({ kind: "rep", dur: step.every, s, r });
-      if (s < step.series) ph.push({ kind: "rest", dur: step.seriesRest, s });
-    }
-    return ph;
-  }, [step]);
-  const [i, setI] = useState(-1);
-  const [phaseStart, setPhaseStart] = useState(0);
-  const [times, setTimes] = useState(null);
-  const now = useNow(80);
-
-  const next = () => {
-    const n = i + 1;
-    if (n >= phases.length) {
-      if (step.test) { say("Test terminé. Entre tes temps."); setTimes(Array(step.reps).fill("")); return; }
-      say("Bloc terminé"); setTimeout(onDone, 800); return;
-    }
-    const p = phases[n];
-    if (p.kind === "rep" && p.r === 1) say(step.series > 1 ? "Série " + p.s + ", go !" : "Go !");
-    if (p.kind === "rest") say("Récupération, " + Math.round(p.dur / 60) + " minutes. Marche.");
-    setPhaseStart(Date.now()); setI(n);
-  };
-
-  if (times) {
-    return (
-      <Card>
-        <Text style={S.h3}>Tes {step.reps} temps (en secondes)</Text>
-        <Text style={[S.small, { marginTop: 4 }]}>Ceux que tu as lus à l'écran en passant la ligne. Laisse vide si tu ne l'as pas vu.</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-          {times.map((v, j) => (
-            <View key={j} style={{ width: "30%" }}>
-              <Text style={S.small}>N°{j + 1}</Text>
-              <TextInput value={v} keyboardType="decimal-pad" placeholder="—" placeholderTextColor={C.mut}
-                onChangeText={(t) => { const n = [...times]; n[j] = t.replace(",", "."); setTimes(n); }}
-                style={{ backgroundColor: C.card2, color: C.txt, borderRadius: 10, padding: 10, fontSize: 18, borderWidth: 1, borderColor: C.line }} />
-            </View>
-          ))}
-        </View>
-        <Btn big title="Enregistrer et continuer" style={{ marginTop: 12 }} onPress={() => { onTestTimes && onTestTimes(times); onDone(); }} />
-      </Card>
-    );
-  }
-
-  if (i < 0) {
-    return (
-      <View>
-        <Card>
-          <Text style={S.secT}>⏱ Heures de départ</Text>
-          {Array.from({ length: step.series }).map((_, s) => (
-            <View key={s} style={{ marginTop: 4 }}>
-              {step.series > 1 && <Text style={S.small}>Série {s + 1}{s > 0 ? ` (après ${fmt(step.seriesRest)} min de récup)` : ""}</Text>}
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                {departures(step.every, step.reps).map((d, j) => (
-                  <Text key={j} style={{ backgroundColor: C.card2, color: C.txt, fontWeight: "800", paddingHorizontal: 9, paddingVertical: 6, borderRadius: 8, overflow: "hidden", fontVariant: ["tabular-nums"] }}>{d}</Text>
-                ))}
-              </View>
-            </View>
-          ))}
-          <Text style={[S.small, { marginTop: 8 }]}>Pas besoin de regarder l'heure : 3 bips courts puis 1 bip long = DÉPART, et la voix t'annonce. Téléphone posé au départ, écran vers toi.</Text>
-        </Card>
-        <StartBtn onPress={() => { say("Prépare-toi. Départ dans 10 secondes."); setPhaseStart(Date.now()); setI(0); }} />
-      </View>
-    );
-  }
-
-  const p = phases[i];
-  const color = p.kind === "rep" ? C.acc : p.kind === "rest" ? C.acc2 : C.warn;
-  const label = p.kind === "prep" ? "Prépare-toi" : p.kind === "rest" ? "Récup entre séries" : "Prochain départ";
-  const sub = p.kind === "rep" ? `${step.test ? "Navette" : "Sprint"} ${p.r}/${step.reps}${step.series > 1 ? ` · série ${p.s}/${step.series}` : ""}` : p.kind === "rest" ? `Série ${p.s + 1} ensuite` : "Départ au bip long";
-  return (
-    <View>
-      {p.kind === "rep" && step.test && (
-        <View style={{ alignItems: "center", marginTop: 6 }}>
-          <Text style={S.small}>TEMPS DEPUIS LE DÉPART</Text>
-          <Text style={{ color: C.acc, fontSize: 96, fontWeight: "900", fontVariant: ["tabular-nums"] }}>{((now - phaseStart) / 1000).toFixed(1)}<Text style={{ fontSize: 32, color: C.mut }}> s</Text></Text>
-        </View>
-      )}
-      {p.kind === "rep" && !step.test && <Text style={{ color: C.acc, fontSize: 44, fontWeight: "900", textAlign: "center" }}>SPRINT {p.r}</Text>}
-      <Text style={[S.mut, { textAlign: "center", marginTop: 4 }]}>{sub}</Text>
-      <Countdown key={i} seconds={p.dur} label={label} color={color} onEnd={next} />
-    </View>
-  );
 }
 
 /* ---------- Circuit de renfo : séries + récup chronométrées ---------- */
@@ -203,6 +107,41 @@ export function CircuitStep({ step, onDone, onExercise }) {
           <Countdown key={i} seconds={p.dur} label="Récupération" color={C.acc2} onEnd={() => go(i + 1)} />
         </View>
       )}
+    </View>
+  );
+}
+
+/* ---------- Chrono vocal d'un bloc technique : la voix annonce chaque partie ---------- */
+export function PartsTimer({ parts, onDone }) {
+  const [i, setI] = useState(-1);
+  const go = (n) => {
+    if (n >= parts.length) { say("Bloc terminé"); setTimeout(onDone, 700); return; }
+    say(parts[n].say); setI(n);
+  };
+  if (i < 0) {
+    return (
+      <View>
+        <Card>
+          <Text style={S.secT}>🔊 La voix t'annonce chaque partie</Text>
+          {parts.map((p, j) => (
+            <View key={j} style={{ flexDirection: "row", marginVertical: 4 }}>
+              <Text style={[S.txt, { width: 52, color: C.acc, fontWeight: "800" }]}>{fmt(p.t)}</Text>
+              <Text style={[S.txt, { flex: 1 }]}>{p.say}</Text>
+            </View>
+          ))}
+          <Text style={[S.small, { marginTop: 6 }]}>Pose le téléphone, volume à fond : tu n'as pas besoin de le regarder.</Text>
+        </Card>
+        <StartBtn onPress={() => go(0)} />
+      </View>
+    );
+  }
+  const p = parts[i];
+  return (
+    <View>
+      <Text style={[S.small, { textAlign: "center" }]}>Partie {i + 1}/{parts.length}</Text>
+      <Text style={[S.h2, { textAlign: "center", marginTop: 6 }]}>{p.say}</Text>
+      <Countdown key={i} seconds={p.t} label="Temps restant" onEnd={() => go(i + 1)} />
+      {parts[i + 1] && <Text style={[S.mut, { textAlign: "center" }]}>Ensuite : {parts[i + 1].say}</Text>}
     </View>
   );
 }

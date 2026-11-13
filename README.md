@@ -1,12 +1,10 @@
 # ⚽ Wawa Foot Coach
 
-Coach guidé pour mes 2 séances de foot par semaine (attaquant / milieu), **50 min maximum** chacune :
-- **Séance A** : échauffement, sauts, accélérations, sprints répétés, renfo force (fente bulgare, tractions, Nordic, mollets)
-- **Séance B** : échelle, 4 parcours techniques avec schémas (slalom, contrôle orienté, échelle + frappe, parcours de l'attaquant), circuit prévention (Copenhagen, tibial, mollets, gainage)
-- Pour chaque séance : matériel à prendre, mise en place sur le terrain, check tibia (périostite)
-- Chaque exercice expliqué (comment faire, à savoir, erreurs), chrono pour chaque série et chaque récup, bips + voix
-- 2 tests simples (navettes 15 m, tractions max) en semaines 1 et 8
-- Séances, tests et historique **sauvegardés sur le serveur** (`data/data.json`)
+Mon coach foot (attaquant / milieu) : **3 séances par semaine** en plus du match du lundi.
+- **⚡ VMA & sprints** (mercredi, terrain) : guidée par la montre **Coros** (la fiche donne les étapes à programmer), pas de téléphone pendant l'effort
+- **💪 Renfo** (jeudi, maison) : kettlebell 12 kg + barre de tractions, circuits chronométrés par l'appli
+- **⚽ Technique** (samedi, terrain) : échauffement ballon, jongles, slalom pied droit / pied gauche, contrôle + passe, frappes. Chrono vocal : la voix annonce chaque partie
+- Fiches courtes, lisibles d'un coup d'œil (détails cachés), records (jongles, buts, tractions), suivi du tibia
 
 ## Structure
 
